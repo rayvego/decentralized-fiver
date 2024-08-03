@@ -1,9 +1,0 @@
-.env
-
-/node_modules
-
-backend/node_modules
-
-user-frontend/node_modules
-
-worker-frontend/node_modules
