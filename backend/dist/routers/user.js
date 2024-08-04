@@ -27,7 +27,7 @@ const s3Client = new client_s3_1.S3Client({
         accessKeyId: (_a = process.env.AWS_ACCESS_KEY_ID) !== null && _a !== void 0 ? _a : "",
         secretAccessKey: (_b = process.env.AWS_SECRET_ACCESS_KEY) !== null && _b !== void 0 ? _b : ""
     },
-    region: "us-east-1"
+    region: "eu-north-1"
 });
 const DEFAULT_TITLE = "Select the most clickable thumbnail";
 const prismaClient = new client_1.PrismaClient();
@@ -80,6 +80,7 @@ router.post("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0
     const userId = req.userId;
     // validate user inputs
     const body = req.body;
+    console.log(body);
     const parseData = types_1.createTaskInput.safeParse(body);
     if (!parseData.success) {
         return res.status(411).json({ message: "You've sent the wrong inputs." });
@@ -91,7 +92,8 @@ router.post("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0
         const response = yield tx.task.create({
             data: {
                 title: (_a = parseData.data.title) !== null && _a !== void 0 ? _a : DEFAULT_TITLE,
-                amount: 1 * config_1.TOTAL_DECIMALS,
+                amount: 0.1 * config_1.TOTAL_DECIMALS,
+                //TODO: Signature should be unique in the table else people can reuse a signature
                 signature: parseData.data.signature,
                 user_id: userId
             }
@@ -104,18 +106,24 @@ router.post("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0
         });
         return response;
     }));
-    res.json({ id: response.id });
+    res.json({
+        id: response.id
+    });
 }));
 router.get("/presignedUrl", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // @ts-ignore
     const userId = req.userId;
     const { url, fields } = yield (0, s3_presigned_post_1.createPresignedPost)(s3Client, {
-        Bucket: 'hkirat-cms',
+        Bucket: 'decentralized-fiver',
         Key: `fiver/${userId}/${Math.random()}/image.jpg`,
         Conditions: [
             ['content-length-range', 0, 5 * 1024 * 1024] // 5 MB max
         ],
         Expires: 3600
+    });
+    console.log({
+        preSignedUrl: url,
+        fields
     });
     res.json({
         preSignedUrl: url,

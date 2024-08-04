@@ -1,8 +1,7 @@
 import {Router} from "express";
 import {PrismaClient} from "@prisma/client";
 import jwt from "jsonwebtoken";
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { S3Client } from '@aws-sdk/client-s3'
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
 import {authMiddleware} from "../middleware";
 import {createTaskInput} from "../types";
@@ -15,7 +14,7 @@ const s3Client = new S3Client({
 		accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
 		secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? ""
 	},
-	region: "us-east-1"
+	region: "eu-north-1"
 })
 
 const DEFAULT_TITLE = "Select the most clickable thumbnail"
@@ -86,6 +85,7 @@ router.post("/task", authMiddleware, async (req, res) => {
 
 	// validate user inputs
 	const body = req.body
+	console.log(body)
 	const parseData = createTaskInput.safeParse(body)
 
 	if (!parseData.success) {
@@ -96,14 +96,16 @@ router.post("/task", authMiddleware, async (req, res) => {
 
 	// transactions are atomic - if one fails, all fail
 	let response = await prismaClient.$transaction(async tx => {
+
 		const response = await tx.task.create({
 			data: {
 				title: parseData.data.title ?? DEFAULT_TITLE,
-				amount: 1 * TOTAL_DECIMALS,
+				amount: 0.1 * TOTAL_DECIMALS,
+				//TODO: Signature should be unique in the table else people can reuse a signature
 				signature: parseData.data.signature,
 				user_id: userId
 			}
-		})
+		});
 
 		await tx.option.createMany({
 			data: parseData.data.options.map(x => ({
@@ -112,10 +114,14 @@ router.post("/task", authMiddleware, async (req, res) => {
 			}))
 		})
 
-		return response
+
+		return response;
+
 	})
 
-	res.json({id: response.id})
+	res.json({
+		id: response.id
+	})
 })
 
 router.get("/presignedUrl", authMiddleware, async (req, res) => {
@@ -123,12 +129,17 @@ router.get("/presignedUrl", authMiddleware, async (req, res) => {
 	const userId = req.userId
 
 	const { url, fields } = await createPresignedPost(s3Client, {
-		Bucket: 'hkirat-cms',
+		Bucket: 'decentralized-fiver',
 		Key: `fiver/${userId}/${Math.random()}/image.jpg`,
 		Conditions: [
 			['content-length-range', 0, 5 * 1024 * 1024] // 5 MB max
 		],
 		Expires: 3600
+	})
+
+	console.log({
+		preSignedUrl: url,
+		fields
 	})
 
 	res.json({
