@@ -26,6 +26,34 @@ export default function Page({params: {
 		title?: string
 	}>({});
 
+	// * ideally should use this which re-fetches the data every 5 seconds
+	// useEffect(() => {
+	// 	let pollTimeout; // Variable to store the timeout ID
+	//
+	// 	const fetchData = () => {
+	// 		getTaskDetails(taskId)
+	// 			.then((data) => {
+	// 				setResult(data.result);
+	// 				setTaskDetails(data.taskDetails);
+	//
+	// 				// Start the polling timer
+	// 				pollTimeout = setTimeout(fetchData, 5000); // Poll every 5 seconds
+	// 			})
+	// 			.catch(error => {
+	// 				// Handle errors here
+	// 				console.error('Error fetching task details:', error);
+	// 			});
+	// 	};
+	//
+	// 	// Initial fetch
+	// 	fetchData();
+	//
+	// 	return () => {
+	// 		// Cleanup: Clear the timeout if the component unmounts
+	// 		clearTimeout(pollTimeout);
+	// 	};
+	// }, [taskId]);
+
 	useEffect(() => {
 		getTaskDetails(taskId)
 			.then((data) => {
